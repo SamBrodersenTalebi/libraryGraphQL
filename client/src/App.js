@@ -16,6 +16,8 @@ const App = () => {
       </div>
 
       <NewBook show={page === 'add'} />
+
+      <Authors show={page === 'authors'} />
     </div>
   );
 };
@@ -23,7 +25,6 @@ const App = () => {
 export default App;
 
 /*
-<Authors show={page === 'authors'} />
 
 <Books show={page === 'books'} />
 */
