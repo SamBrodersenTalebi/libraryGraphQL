@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-//import Authors from './components/Authors';
+import Authors from './components/Authors';
 //import Books from './components/Books';
 import NewBook from './components/NewBook';
 import { CREATE_BOOK, ALL_AUTHORS, ALL_BOOKS } from './services/query';
