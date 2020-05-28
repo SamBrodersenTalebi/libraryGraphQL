@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useMutation } from '@apollo/client';
-import { ALL_AUTHORS, UPDATE_BIRTH } from '../services/query';
+import { ALL_AUTHORS, UPDATE_BIRTH, ALL_BOOKS } from '../services/query';
 import Select from 'react-select';
 
-const Authors = (props) => {
+const Authors = ({ show, setError }) => {
   const [name, setName] = useState('');
   const [born, setBorn] = useState('');
 
@@ -12,7 +12,12 @@ const Authors = (props) => {
   const result = useQuery(ALL_AUTHORS);
   const options = [];
 
-  const [changeBirth] = useMutation(UPDATE_BIRTH);
+  const [changeBirth] = useMutation(UPDATE_BIRTH, {
+    refetchQueries: [{ query: ALL_AUTHORS }, { query: ALL_BOOKS }],
+    onError: (error) => {
+      setError(error.graphQLErrors[0].message);
+    },
+  });
 
   const update = async (e) => {
     e.preventDefault();
@@ -40,7 +45,7 @@ const Authors = (props) => {
     console.log(options);
   }
 
-  if (!props.show) {
+  if (!show) {
     return null;
   }
   //const authors = [];
