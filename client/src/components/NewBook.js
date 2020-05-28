@@ -16,6 +16,7 @@ const NewBook = (props) => {
 
   const submit = async (event) => {
     event.preventDefault();
+    //convert string --> integer
     const date = Number(published);
     console.log(date);
     createBook({ variables: { title, author, published: date, genres } });

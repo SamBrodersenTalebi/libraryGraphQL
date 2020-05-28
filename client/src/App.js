@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Authors from './components/Authors';
-//import Books from './components/Books';
+import Books from './components/Books';
 import NewBook from './components/NewBook';
 import { CREATE_BOOK, ALL_AUTHORS, ALL_BOOKS } from './services/query';
 
@@ -18,13 +18,10 @@ const App = () => {
       <NewBook show={page === 'add'} />
 
       <Authors show={page === 'authors'} />
+
+      <Books show={page === 'books'} />
     </div>
   );
 };
 
 export default App;
-
-/*
-
-<Books show={page === 'books'} />
-*/
