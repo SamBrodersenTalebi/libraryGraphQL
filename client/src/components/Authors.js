@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useMutation } from '@apollo/client';
 import { ALL_AUTHORS, UPDATE_BIRTH } from '../services/query';
+import Select from 'react-select';
 
 const Authors = (props) => {
   const [name, setName] = useState('');
@@ -9,6 +10,8 @@ const Authors = (props) => {
 
   //useQuery hook makes ALL_AUTHORS query and saves to result
   const result = useQuery(ALL_AUTHORS);
+  const options = [];
+
   const [changeBirth] = useMutation(UPDATE_BIRTH);
 
   const update = async (e) => {
@@ -18,8 +21,24 @@ const Authors = (props) => {
     setName('');
     setBorn('');
   };
+
+  const handleOnChange = (value, { action }) => {
+    if (action === 'select-option') {
+      // do something
+      console.log(value.value);
+      setName(value.value);
+    }
+  };
+
   //if loading is true return loading
-  if (result.loading) return <div>loading</div>;
+  if (result.loading) {
+    return <div>loading</div>;
+  } else {
+    result.data.allAuthors.map((author) => {
+      options.push({ value: author.name, label: author.name });
+    });
+    console.log(options);
+  }
 
   if (!props.show) {
     return null;
@@ -49,12 +68,7 @@ const Authors = (props) => {
       <h3>set birthyear</h3>
       <form onSubmit={update}>
         <div>
-          name{' '}
-          <input
-            type='text'
-            value={name}
-            onChange={({ target }) => setName(target.value)}
-          />
+          <Select options={options} onChange={handleOnChange} />
         </div>
         <div>
           born{' '}
