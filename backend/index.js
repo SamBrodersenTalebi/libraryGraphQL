@@ -1,83 +1,25 @@
-const { ApolloServer, gql } = require('apollo-server');
-const { v1: uuid } = require('uuid');
+//const { v1: uuid } = require('uuid');
+const { ApolloServer, UserInputError, gql } = require('apollo-server');
+const mongoose = require('mongoose');
+const Book = require('./models/Book');
+const Author = require('./models/Author');
 
-let authors = [
-  {
-    name: 'Robert Martin',
-    id: 'afa51ab0-344d-11e9-a414-719c6709cf3e',
-    born: 1952,
-  },
-  {
-    name: 'Martin Fowler',
-    id: 'afa5b6f0-344d-11e9-a414-719c6709cf3e',
-    born: 1963,
-  },
-  {
-    name: 'Fyodor Dostoevsky',
-    id: 'afa5b6f1-344d-11e9-a414-719c6709cf3e',
-    born: 1821,
-  },
-  {
-    name: 'Joshua Kerievsky', // birthyear not known
-    id: 'afa5b6f2-344d-11e9-a414-719c6709cf3e',
-  },
-  {
-    name: 'Sandi Metz', // birthyear not known
-    id: 'afa5b6f3-344d-11e9-a414-719c6709cf3e',
-  },
-];
+mongoose.set('useFindAndModify', false);
+mongoose.set('useUnifiedTopology', true);
+mongoose.set('useCreateIndex', true);
+const MONGODB_URI =
+  'mongodb+srv://sam:DBCDBhx4Z0SZHb8T@library-qztyk.mongodb.net/test?retryWrites=true&w=majority';
 
-let books = [
-  {
-    title: 'Clean Code',
-    published: 2008,
-    author: 'Robert Martin',
-    id: 'afa5b6f4-344d-11e9-a414-719c6709cf3e',
-    genres: ['refactoring'],
-  },
-  {
-    title: 'Agile software development',
-    published: 2002,
-    author: 'Robert Martin',
-    id: 'afa5b6f5-344d-11e9-a414-719c6709cf3e',
-    genres: ['agile', 'patterns', 'design'],
-  },
-  {
-    title: 'Refactoring, edition 2',
-    published: 2018,
-    author: 'Martin Fowler',
-    id: 'afa5de00-344d-11e9-a414-719c6709cf3e',
-    genres: ['refactoring'],
-  },
-  {
-    title: 'Refactoring to patterns',
-    published: 2008,
-    author: 'Joshua Kerievsky',
-    id: 'afa5de01-344d-11e9-a414-719c6709cf3e',
-    genres: ['refactoring', 'patterns'],
-  },
-  {
-    title: 'Practical Object-Oriented Design, An Agile Primer Using Ruby',
-    published: 2012,
-    author: 'Sandi Metz',
-    id: 'afa5de02-344d-11e9-a414-719c6709cf3e',
-    genres: ['refactoring', 'design'],
-  },
-  {
-    title: 'Crime and punishment',
-    published: 1866,
-    author: 'Fyodor Dostoevsky',
-    id: 'afa5de03-344d-11e9-a414-719c6709cf3e',
-    genres: ['classic', 'crime'],
-  },
-  {
-    title: 'The Demon ',
-    published: 1872,
-    author: 'Fyodor Dostoevsky',
-    id: 'afa5de04-344d-11e9-a414-719c6709cf3e',
-    genres: ['classic', 'revolution'],
-  },
-];
+console.log('connecting to', MONGODB_URI);
+
+mongoose
+  .connect(MONGODB_URI, { useNewUrlParser: true })
+  .then(() => {
+    console.log('connected to MongoDB');
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB:', error.message);
+  });
 
 const typeDefs = gql`
   type Query {
@@ -88,11 +30,11 @@ const typeDefs = gql`
   }
 
   type Book {
-    id: ID!
     title: String!
     published: Int!
-    author: String!
-    genres: [String]
+    author: Author!
+    genres: [String!]!
+    id: ID!
   }
 
   type Author {
@@ -105,9 +47,9 @@ const typeDefs = gql`
   type Mutation {
     addBook(
       title: String!
-      published: Int!
-      author: String!
-      genres: [String]
+      name: String!
+      published: Int
+      genres: [String!]!
     ): Book
     editAuthor(name: String, setBornTo: Int): Author
   }
@@ -116,10 +58,14 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     bookCount: () => {
-      return books.length;
+      //use collection.countDocument to get count number of documents
+      console.log(Book.collection.countDocuments());
+      return Book.collection.countDocuments();
     },
-    authorCount: () => authors.length,
+    authorCount: () => Author.collection.countDocuments(),
     allBooks: (root, args) => {
+      return Book.find({}).populate('author');
+      /*
       const { author, genre } = args;
       if (author && genre)
         return books
@@ -128,16 +74,67 @@ const resolvers = {
       if (author) return books.filter((book) => book.author === author);
       if (genre) return books.filter((book) => book.genres.includes(genre));
       return books;
+      */
     },
-    allAuthors: () =>
-      authors.map((author) => ({
-        ...author,
-        bookCount: books.filter((book) => book.author === author.name).length,
-      })),
+    allAuthors: () => Author.find({}),
   },
 
   Mutation: {
-    addBook: (root, args) => {
+    addBook: async (root, args) => {
+      //use find to determine if existing author exists
+      let existingAuthor = await Author.findOne({ name: args.name });
+      //create new author if one does not exist with the name
+      if (!existingAuthor) {
+        const newAuthor = new Author({ name: args.name });
+        try {
+          existingAuthor = await newAuthor.save();
+          console.log(existingAuthor._id);
+          //create new Book with reference to author by id
+          const book = new Book({ ...args, author: existingAuthor._id });
+          const savedBook = await book.save();
+          console.log(savedBook);
+          const bookWithAuthor = await Book.populate(savedBook, {
+            path: 'author',
+          });
+          return bookWithAuthor;
+        } catch (error) {
+          //wrong arguments
+          throw new UserInputError(error.message, {
+            invalidArgs: args,
+          });
+        }
+      }
+    },
+    editAuthor: async (root, args) => {
+      const { name, setBornTo } = args;
+      try {
+        //use find one and update to update existing author
+        //set the new option to true to return the document after update was applied.
+        const updatedAuthor = await findOneAndUpdate(
+          { name },
+          { born: setBornTo },
+          { new: true }
+        );
+      } catch (error) {
+        //wrong arguments
+        throw new UserInputError(error.message, {
+          invalidArgs: args,
+        });
+      }
+    },
+  },
+};
+
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
+
+server.listen().then(({ url }) => {
+  console.log(`Server ready at ${url}`);
+});
+
+/*
       const findAuthor = authors.find((author) => author.name === args.author);
 
       if (!findAuthor) {
@@ -161,28 +158,4 @@ const resolvers = {
       const book = { ...args, id: uuid() };
       books = books.concat(book);
       return book;
-    },
-    editAuthor: (root, args) => {
-      const { name, setBornTo } = args;
-      console.log(name, setBornTo);
-      const findAuthor = authors.find((a) => a.name === name);
-      console.log(findAuthor);
-      if (!findAuthor) {
-        return null;
-      }
-
-      const updatedAuthor = { ...findAuthor, born: setBornTo };
-      authors = authors.map((a) => (a.name === name ? updatedAuthor : a));
-      return updatedAuthor;
-    },
-  },
-};
-
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
-
-server.listen().then(({ url }) => {
-  console.log(`Server ready at ${url}`);
-});
+      */
