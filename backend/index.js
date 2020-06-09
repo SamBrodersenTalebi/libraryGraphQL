@@ -64,17 +64,16 @@ const resolvers = {
     },
     authorCount: () => Author.collection.countDocuments(),
     allBooks: (root, args) => {
+      if (args.author && args.genre) {
+      } else {
+        if (args.author) {
+        }
+        if (args.genre) {
+          //The $in operator is used to select those documents where the value of the field is equal to any of the given value in the array
+          return Book.find({ genres: { $in: [args.genre] } });
+        }
+      }
       return Book.find({}).populate('author');
-      /*
-      const { author, genre } = args;
-      if (author && genre)
-        return books
-          .filter((book) => book.author === author)
-          .filter((book) => book.genres.includes(genre));
-      if (author) return books.filter((book) => book.author === author);
-      if (genre) return books.filter((book) => book.genres.includes(genre));
-      return books;
-      */
     },
     allAuthors: () => Author.find({}),
   },
@@ -90,6 +89,22 @@ const resolvers = {
           existingAuthor = await newAuthor.save();
           console.log(existingAuthor._id);
           //create new Book with reference to author by id
+          const book = new Book({ ...args, author: existingAuthor._id });
+          const savedBook = await book.save();
+          console.log(savedBook);
+          const bookWithAuthor = await Book.populate(savedBook, {
+            path: 'author',
+          });
+          return bookWithAuthor;
+        } catch (error) {
+          //wrong arguments
+          throw new UserInputError(error.message, {
+            invalidArgs: args,
+          });
+        }
+      } else {
+        //existing author exists
+        try {
           const book = new Book({ ...args, author: existingAuthor._id });
           const savedBook = await book.save();
           console.log(savedBook);
@@ -133,29 +148,3 @@ const server = new ApolloServer({
 server.listen().then(({ url }) => {
   console.log(`Server ready at ${url}`);
 });
-
-/*
-      const findAuthor = authors.find((author) => author.name === args.author);
-
-      if (!findAuthor) {
-        const newAuthor = {
-          name: args.author,
-          born: null,
-          bookCount: 1,
-          id: uuid(),
-        };
-        authors = authors.concat(newAuthor);
-      } else {
-        const updatedAuthor = {
-          ...findAuthor,
-          bookCount: ++findAuthor.bookCount,
-        };
-        authors = authors.map((a) =>
-          a.name !== findAuthor.name ? a : updatedAuthor
-        );
-      }
-
-      const book = { ...args, id: uuid() };
-      books = books.concat(book);
-      return book;
-      */
