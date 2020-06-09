@@ -3,6 +3,8 @@ const { ApolloServer, UserInputError, gql } = require('apollo-server');
 const mongoose = require('mongoose');
 const Book = require('./models/Book');
 const Author = require('./models/Author');
+const User = require('./models/User');
+const jwt = require('jsonwebtoken');
 
 mongoose.set('useFindAndModify', false);
 mongoose.set('useUnifiedTopology', true);
@@ -21,6 +23,11 @@ mongoose
     console.log('error connection to MongoDB:', error.message);
   });
 
+const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY';
+
+/* The query me returns the currently logged in user.
+New users are created with the createUser mutation, 
+and logging in happens with login -mutation. */
 const typeDefs = gql`
   type User {
     username: String!
@@ -92,6 +99,32 @@ const resolvers = {
   },
 
   Mutation: {
+    createUser: (root, args) => {
+      //create user and pass in username
+      const user = new User({ username: args.username });
+
+      return user.save().catch((error) => {
+        throw new UserInputError(error.message, {
+          invalidArgs: args,
+        });
+      });
+    },
+    login: async (root, args) => {
+      const user = await User.findOne({ username: args.username });
+
+      //hardcoded password, checks if user and password is valid
+      if (!user || args.password !== 'secret12') {
+        throw new UserInputError('wrong credentials');
+      }
+
+      const userForToken = {
+        username: user.username,
+        id: user._id,
+      };
+
+      //returns a jwt token
+      return { value: jwt.sign(userForToken, JWT_SECRET) };
+    },
     addBook: async (root, args) => {
       //use find to determine if existing author exists
       let existingAuthor = await Author.findOne({ name: args.name });
