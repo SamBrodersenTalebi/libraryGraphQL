@@ -96,6 +96,10 @@ const resolvers = {
       return Book.find({}).populate('author');
     },
     allAuthors: () => Author.find({}),
+    //returns current logged in user
+    me: (root, args, context) => {
+      return context.currentUser;
+    },
   },
 
   Mutation: {
@@ -189,6 +193,15 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context: async ({ req }) => {
+    const auth = req ? req.headers.authorization : null;
+    if (auth && auth.toLowerCase().startsWith('bearer ')) {
+      const decodedToken = jwt.verify(auth.substring(7), JWT_SECRET);
+      //return currentUser id
+      const currentUser = await User.findById(decodedToken.id);
+      return { currentUser };
+    }
+  },
 });
 
 server.listen().then(({ url }) => {
