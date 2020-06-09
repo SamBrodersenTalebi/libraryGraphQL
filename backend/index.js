@@ -129,7 +129,12 @@ const resolvers = {
       //returns a jwt token
       return { value: jwt.sign(userForToken, JWT_SECRET) };
     },
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
+      const currentUser = context.currentUser;
+
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated');
+      }
       //use find to determine if existing author exists
       let existingAuthor = await Author.findOne({ name: args.name });
       //create new author if one does not exist with the name
@@ -170,7 +175,12 @@ const resolvers = {
         }
       }
     },
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
+      const currentUser = context.currentUser;
+
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated');
+      }
       const { name, setBornTo } = args;
       try {
         //use find one and update to update existing author
