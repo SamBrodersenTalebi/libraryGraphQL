@@ -1,5 +1,10 @@
 //const { v1: uuid } = require('uuid');
-const { ApolloServer, UserInputError, gql } = require('apollo-server');
+const {
+  ApolloServer,
+  UserInputError,
+  gql,
+  AuthenticationError,
+} = require('apollo-server');
 const mongoose = require('mongoose');
 const Book = require('./models/Book');
 const Author = require('./models/Author');
@@ -104,8 +109,8 @@ const resolvers = {
 
   Mutation: {
     createUser: (root, args) => {
-      //create user and pass in username
-      const user = new User({ username: args.username });
+      //create user and pass in username and favoriteGenre
+      const user = new User({ ...args });
 
       return user.save().catch((error) => {
         throw new UserInputError(error.message, {
@@ -182,14 +187,17 @@ const resolvers = {
         throw new AuthenticationError('not authenticated');
       }
       const { name, setBornTo } = args;
+      console.log(name, setBornTo);
       try {
         //use find one and update to update existing author
         //set the new option to true to return the document after update was applied.
-        const updatedAuthor = await findOneAndUpdate(
+        const updatedAuthor = await Author.findOneAndUpdate(
           { name },
           { born: setBornTo },
           { new: true }
         );
+        console.log(updatedAuthor);
+        return updatedAuthor;
       } catch (error) {
         //wrong arguments
         throw new UserInputError(error.message, {

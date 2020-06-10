@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
+import { useApolloClient } from '@apollo/client';
 import Authors from './components/Authors';
 import Books from './components/Books';
 import NewBook from './components/NewBook';
-import { CREATE_BOOK, ALL_AUTHORS, ALL_BOOKS } from './services/query';
+import LoginForm from './components/LoginForm';
+import Recommended from './components/Recommended';
+import { ALL_BOOKS, USER } from './services/query';
+import { useQuery } from '@apollo/client';
 
 const App = () => {
   const [page, setPage] = useState('authors');
+  const [token, setToken] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const client = useApolloClient();
+  const user = useQuery(USER);
+  const books = useQuery(ALL_BOOKS);
 
   const notify = (message) => {
     setErrorMessage(message);
@@ -15,12 +23,35 @@ const App = () => {
     }, 10000);
   };
 
+  const logout = () => {
+    setToken(null);
+    //remove token from local storage
+    localStorage.clear();
+    /*     resetStore resets the cache, 
+    which is important because some queries might have fetched data to cache, 
+    which only logged in users should have access to. */
+    client.resetStore();
+  };
+
+  //no token means user is not logged in!
+  if (!token) {
+    return (
+      <div>
+        <Notify errorMessage={errorMessage} />
+        <h2>Login</h2>
+        <LoginForm setToken={setToken} setError={notify} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div>
         <button onClick={() => setPage('authors')}>authors</button>
         <button onClick={() => setPage('books')}>books</button>
         <button onClick={() => setPage('add')}>add book</button>
+        <button onClick={() => setPage('recommended')}>recommended</button>
+        <button onClick={logout}>log out</button>
       </div>
       <Notify errorMessage={errorMessage} />
 
@@ -29,6 +60,8 @@ const App = () => {
       <Authors show={page === 'authors'} setError={notify} />
 
       <Books show={page === 'books'} />
+
+      <Recommended show={page === 'recommended'} user={user} books={books} />
     </div>
   );
 };
