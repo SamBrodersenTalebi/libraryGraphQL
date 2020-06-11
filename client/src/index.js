@@ -7,7 +7,10 @@ import {
   ApolloProvider,
   HttpLink,
   InMemoryCache,
+  split,
 } from '@apollo/client';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { WebSocketLink } from '@apollo/link-ws';
 
 //the normal httpLink connection is modified so that the request's authorization header contains the token if one has been saved to the localStorage.
 const authLink = setContext((_, { headers }) => {
@@ -21,11 +24,29 @@ const authLink = setContext((_, { headers }) => {
 });
 
 const httpLink = new HttpLink({ uri: 'http://localhost:4000' });
+/* The new configuration is due to the fact that the application must have an HTTP connection as well as a WebSocket connection to the GraphQL server */
+const wsLink = new WebSocketLink({
+  uri: `ws://localhost:4000/graphql`,
+  options: {
+    reconnect: true,
+  },
+});
+const splitLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsLink,
+  authLink.concat(httpLink)
+);
 
 const client = new ApolloClient({
   cache: new InMemoryCache(),
   //The link parameter given to the client-object defines how apollo connects to the server.
-  link: authLink.concat(httpLink),
+  link: splitLink,
 });
 
 ReactDOM.render(
