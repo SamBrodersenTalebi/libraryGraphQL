@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { CREATE_BOOK, ALL_AUTHORS, ALL_BOOKS } from '../services/query';
 import { useMutation } from '@apollo/client';
 
-const NewBook = ({ show, setError }) => {
+const NewBook = ({ show, setError, updateCacheWith }) => {
   const [title, setTitle] = useState('');
-  const [author, setAuhtor] = useState('');
+  const [name, setName] = useState('');
   const [published, setPublished] = useState('');
   const [genre, setGenre] = useState('');
   const [genres, setGenres] = useState([]);
@@ -13,6 +13,9 @@ const NewBook = ({ show, setError }) => {
     refetchQueries: [{ query: ALL_AUTHORS }, { query: ALL_BOOKS }],
     onError: (error) => {
       setError(error.graphQLErrors[0].message);
+    },
+    update: (store, response) => {
+      updateCacheWith(response.data.addBook);
     },
   });
 
@@ -25,12 +28,12 @@ const NewBook = ({ show, setError }) => {
     //convert string --> integer
     const date = Number(published);
     console.log(date);
-    createBook({ variables: { title, author, published: date, genres } });
+    createBook({ variables: { title, name, published: date, genres } });
     console.log('add book...');
 
     setTitle('');
     setPublished('');
-    setAuhtor('');
+    setName('');
     setGenres([]);
     setGenre('');
   };
@@ -53,8 +56,8 @@ const NewBook = ({ show, setError }) => {
         <div>
           author
           <input
-            value={author}
-            onChange={({ target }) => setAuhtor(target.value)}
+            value={name}
+            onChange={({ target }) => setName(target.value)}
           />
         </div>
         <div>

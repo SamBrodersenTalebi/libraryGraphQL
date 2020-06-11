@@ -42,7 +42,6 @@ const Authors = ({ show, setError }) => {
     result.data.allAuthors.map((author) => {
       options.push({ value: author.name, label: author.name });
     });
-    console.log(options);
   }
 
   if (!show) {

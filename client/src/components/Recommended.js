@@ -3,12 +3,11 @@ import React, { useState } from 'react';
 const Recommended = ({ books, user, show }) => {
   const allBooks = books.loading ? [] : books.data.allBooks;
   const currentUser = user.data.me;
-  console.log(currentUser);
+
   //array with recommended books
   const recommendedBooks = allBooks.filter((book) =>
     book.genres.includes(currentUser.favoriteGenre)
   );
-  console.log(recommendedBooks);
 
   if (!show) {
     return null;
