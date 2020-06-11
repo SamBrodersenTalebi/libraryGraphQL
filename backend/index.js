@@ -113,6 +113,15 @@ const resolvers = {
     },
   },
 
+  Author: {
+    bookCount: async (root) => {
+      /*       console.log(root);
+      const author = await Author.findOne({ name: root.name }).select('_id');
+      return Book.find({ author }).countDocuments(); */
+      return root.books.length;
+    },
+  },
+
   Mutation: {
     createUser: (root, args) => {
       //create user and pass in username and favoriteGenre
