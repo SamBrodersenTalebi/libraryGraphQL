@@ -5,17 +5,21 @@ const Recommended = ({ books, user, show }) => {
   const currentUser = user.data.me;
   console.log(currentUser);
   //array with recommended books
-  /*   const recommendedBooks = allBooks.filter((book) =>
-    book.genres.includes(currentUser.favoriteGenre) 
+  const recommendedBooks = allBooks.filter((book) =>
+    book.genres.includes(currentUser.favoriteGenre)
   );
-  */
+  console.log(recommendedBooks);
+
+  if (!show) {
+    return null;
+  }
   return (
     <div>
       <h2>Recommendations</h2>
       <p>
         books in your favorite genre <strong>patterns</strong>
       </p>
-      {/*       <table>
+      <table>
         <tbody>
           <tr>
             <th>book</th>
@@ -30,7 +34,7 @@ const Recommended = ({ books, user, show }) => {
             </tr>
           ))}
         </tbody>
-      </table> */}
+      </table>
     </div>
   );
 };

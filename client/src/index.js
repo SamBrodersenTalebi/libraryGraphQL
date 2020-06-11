@@ -11,7 +11,7 @@ import {
 
 //the normal httpLink connection is modified so that the request's authorization header contains the token if one has been saved to the localStorage.
 const authLink = setContext((_, { headers }) => {
-  const token = localStorage.getItem('phonenumbers-user-token');
+  const token = localStorage.getItem('user-token');
   return {
     headers: {
       ...headers,

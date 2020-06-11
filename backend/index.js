@@ -10,6 +10,8 @@ const Book = require('./models/Book');
 const Author = require('./models/Author');
 const User = require('./models/User');
 const jwt = require('jsonwebtoken');
+const { PubSub } = require('apollo-server');
+const pubsub = new PubSub();
 
 mongoose.set('useFindAndModify', false);
 mongoose.set('useUnifiedTopology', true);
@@ -34,6 +36,10 @@ const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY';
 New users are created with the createUser mutation, 
 and logging in happens with login -mutation. */
 const typeDefs = gql`
+  type Subscription {
+    bookAdded: Book!
+  }
+
   type User {
     username: String!
     favoriteGenre: String!
@@ -155,6 +161,8 @@ const resolvers = {
           const bookWithAuthor = await Book.populate(savedBook, {
             path: 'author',
           });
+          /* Adding a new book publishes a notification about operation with PubSub method publish */
+          pubsub.publish('BOOK_ADDED', { bookAdded: bookWithAuthor });
           return bookWithAuthor;
         } catch (error) {
           //wrong arguments
@@ -171,6 +179,7 @@ const resolvers = {
           const bookWithAuthor = await Book.populate(savedBook, {
             path: 'author',
           });
+          pubsub.publish('BOOK_ADDED', { bookAdded: bookWithAuthor });
           return bookWithAuthor;
         } catch (error) {
           //wrong arguments
@@ -204,6 +213,13 @@ const resolvers = {
           invalidArgs: args,
         });
       }
+    },
+  },
+
+  Subscription: {
+    /* bookAdded subscriptions resolver registers all subscribers by returning iterator object */
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED']),
     },
   },
 };
