@@ -162,11 +162,19 @@ const resolvers = {
         const newAuthor = new Author({ name: args.name });
         try {
           existingAuthor = await newAuthor.save();
-          console.log(existingAuthor._id);
+
           //create new Book with reference to author by id
           const book = new Book({ ...args, author: existingAuthor._id });
           const savedBook = await book.save();
           console.log(savedBook);
+
+          //find author by id and update the amount of books
+          const authorId = existingAuthor._id;
+          await Author.findByIdAndUpdate(authorId, {
+            name: existingAuthor.name,
+            born: existingAuthor.born,
+            books: existingAuthor.books.concat(savedBook._id),
+          });
           const bookWithAuthor = await Book.populate(savedBook, {
             path: 'author',
           });
@@ -182,9 +190,19 @@ const resolvers = {
       } else {
         //existing author exists
         try {
+          //save new book
           const book = new Book({ ...args, author: existingAuthor._id });
           const savedBook = await book.save();
-          console.log(savedBook);
+
+          //find author by id and update the amount of books
+          const authorId = existingAuthor._id;
+          await Author.findByIdAndUpdate(authorId, {
+            name: existingAuthor.name,
+            born: existingAuthor.born,
+            books: existingAuthor.books.concat(savedBook._id),
+          });
+
+          //saved book with author
           const bookWithAuthor = await Book.populate(savedBook, {
             path: 'author',
           });
